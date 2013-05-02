@@ -154,7 +154,7 @@ class Tx_AmazingLess_PageRenderer {
 
 		if (is_file($targetFileName)) {
 				// remove the prefix again
-			return substr($targetFileName, strlen(PATH_site)-1);
+			return substr($targetFileName, strlen(PATH_site));
 		} else {
 			return FALSE;
 		}
