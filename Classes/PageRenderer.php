@@ -173,25 +173,9 @@ class Tx_AmazingLess_PageRenderer {
 	 * calls the LESS compiler
 	 */
 	protected function callLessCompiler($lessFileName, $targetFileName) {
-			// create the less file (and let possible excpetions bubble up)
-
-		if (t3lib_div::cmpIP(t3lib_div::getIndpEnv('REMOTE_ADDR'), $GLOBALS['TYPO3_CONF_VARS']['SYS']['devIPmask'])) {
-			// create a new cache object, and compile
-			$cache = lessc::cexecute($lessFileName);
-			t3lib_div::writeFile($targetFileName, $cache['compiled']);
-	
-			// the next time we run, write only if it has updated
-			$last_updated = $cache['updated'];
-			$cache = lessc::cexecute($cache);
-			if ($cache['updated'] > $last_updated) {
-				t3lib_div::writeFile($targetFileName, $cache['compiled']);
-			}
-
-		} else {
-			// basic caching
-			lessc::ccompile($lessFileName, $targetFileName);
-			t3lib_div::fixPermissions($targetFileName);
-		}
-
+		// create the less file (and let possible exceptions bubble up)
+		// create a new cache object, and compile
+		$lessCompiler = new lessc();
+		$lessCompiler->checkedCompile($lessFileName, $targetFileName);
 	}
 }
