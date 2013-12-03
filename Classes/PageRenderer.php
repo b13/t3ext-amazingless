@@ -170,12 +170,92 @@ class Tx_AmazingLess_PageRenderer {
 	}
 	
 	/**
-	 * calls the LESS compiler
+	 * Calls the LESS compiler
+	 *
+	 * @param string $lessFileName
+	 * @param string $targetFileName
+	 * @return void
 	 */
 	protected function callLessCompiler($lessFileName, $targetFileName) {
 		// create the less file (and let possible exceptions bubble up)
 		// create a new cache object, and compile
+
+		$data = $this->getFromCache($lessFileName);
+		$exists = file_exists($targetFileName);
 		$lessCompiler = new lessc();
-		$lessCompiler->checkedCompile($lessFileName, $targetFileName);
+
+		if ($exists && !empty($data)) {
+			$result = $lessCompiler->cachedCompile($data);
+		} else {
+			$result = $lessCompiler->cachedCompile($lessFileName);
+		}
+
+		if (isset($result['compiled'])) {
+			t3lib_div::writeFile($targetFileName, $result['compiled']);
+			$this->setInCache($lessFileName, $result);
+		}
+	}
+
+	/**
+	 * Gets lessc cache data, if available.
+	 * Array keys are 'root', 'files', 'updated'
+	 *
+	 * @param string $lessFileName
+	 * @return array
+	 */
+	protected function getFromCache($lessFileName) {
+		$identifier = md5('tx_amazingless::' . $lessFileName);
+		$data = $this->getCache()->get($identifier);
+		return $data;
+	}
+
+	/**
+	 * Sets lessc cache data.
+	 * Array keys are 'root', 'files', 'updated'
+	 *
+	 * @param string $lessFileName
+	 * @param array $data
+	 * @return void
+	 */
+	protected function setInCache($lessFileName, array $data) {
+		if (isset($data['compiled'])) {
+			unset($data['compiled']);
+		}
+
+		$tags = array('tx_amazingless');
+		$identifier = md5('tx_amazingless::' . $lessFileName);
+		$this->getCache()->set($identifier, $data, $tags, 86400);
+	}
+
+	/**
+	 * Gets the cache object.
+	 *
+	 * @return t3lib_cache_frontend_Frontend
+	 */
+	protected function getCache() {
+		// Initializes the cache_hash cache
+		// (most probably for TYPO3 4.5 only)
+		$initializeCache = (
+			!$this->getCacheManager()->hasCache('cache_hash')
+			&& is_callable('t3lib_cache::initContentHashCache')
+		);
+		if ($initializeCache) {
+			t3lib_cache::initContentHashCache();
+		}
+		return $this->getCacheManager()->getCache('cache_hash');
+	}
+
+	/**
+	 * Gets the cache manager.
+	 *
+	 * @return t3lib_cache_Manager
+	 */
+	protected function getCacheManager() {
+		// Initializes the caching framework
+		// (most probably for TYPO3 4.5 only)
+		if (!isset($GLOBALS['typo3CacheManager'])) {
+			t3lib_cache::initializeCachingFramework();
+		}
+		return $GLOBALS['typo3CacheManager'];
 	}
 }
